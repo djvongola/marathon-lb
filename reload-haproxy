@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+PIDFILE="/tmp/haproxy.pid"
+HAPROXY_SERVICE="/marathon-lb/service/haproxy"
+
+OLD_PID="none"
+if [ -f "$PIDFILE" ]; then
+  OLD_PID="$(cat $PIDFILE)"
+fi
+
+sv reload $HAPROXY_SERVICE
+
+while [ ! -f "$PIDFILE" ]; do
+  sleep 0.1
+done
+
+while [ "$OLD_PID" -eq "$(cat $PIDFILE)" ]; do
+  sleep 0.1
+done
+
+sleep 0.2

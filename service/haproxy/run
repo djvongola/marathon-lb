@@ -13,11 +13,29 @@ reload() {
     echo "Can't aquire lock, reload already in progress?"
     return
   fi
+
+  # Begin to drop SYN packets with firewall rule
+  iptables -I INPUT -p tcp -m multiport --dports $PORTS --syn -j DROP
+
+  # Wait to settle
+  sleep 0.2
+
+  # Save the current HAProxy state
+  socat /var/run/haproxy/socket - <<< "show servers state" > /var/state/haproxy/global
+
+  # Trigger reload
   haproxy -p $PIDFILE -f /marathon-lb/haproxy.cfg -sf $(cat $PIDFILE)
+
+  # Remove the firewall rule
+  iptables -D INPUT -p tcp -m multiport --dports $PORTS --syn -j DROP
+
+  sleep 0.2
   flock -u 200
 }
 
+mkdir -p /var/state/haproxy
+mkdir -p /var/run/haproxy
 haproxy -p $PIDFILE -f /marathon-lb/haproxy.cfg
 
 trap reload SIGHUP
-while true; do sleep 1; done
+while true; do sleep 0.5; done

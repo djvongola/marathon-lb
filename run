@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SERVICE="/marathon-lb/service/haproxy"
+HAPROXY_SERVICE="/marathon-lb/service/haproxy"
 
 # Iterate through the arguments to see if any SSL certificate is provided.
 for key in "$@"
@@ -36,7 +36,7 @@ if [ -n "${MESOS_SANDBOX-}" ] && [ -d "$MESOS_SANDBOX/templates" ]; then
   cp -v "$MESOS_SANDBOX/templates/"* templates/
 fi
 
-/usr/bin/runsv "$SERVICE" &
+/usr/bin/runsv "$HAPROXY_SERVICE" &
 RUNSV=$!
 ARGS=""
 
@@ -69,7 +69,7 @@ while true; do
   /marathon-lb/marathon_lb.py \
     --syslog-socket /dev/null \
     --haproxy-config /marathon-lb/haproxy.cfg \
-    -c "sv reload $SERVICE" \
+    -c "/marathon-lb/reload-haproxy" \
     $ARGS "$@" &
   wait $! || exit $? # Needed for the traps to work
   if [ "$MODE" != "poll" ]; then
